@@ -1,4 +1,4 @@
-##### BEARmod v.0.6
+##### BEARmod v.0.7
 #
 # Basic Epidemic, Activity, and Response simulation model
 # 
@@ -20,11 +20,10 @@
 #
 #
 #
-# See run_model_example.R for fully working example.
+# See run_model.R for working example.
 #
 # TO DO:
 # - Add in infectious period for part of the exposed period (new category: exposed and infectious)
-# - Add in ability to reduce contact rates in certain places
 #
 #
 #
@@ -40,7 +39,7 @@ InitiatePop = function(pat_locator,initialInf,initialExp){
     nInitialExp = initialExp,
     nInf = initialInf,
     nExp = initialExp,
-    nTotal = pat_locator$TOTAL_POP2015,
+    nTotal = pat_locator$pop,
     names = pat_locator$patNames,
     IDs = pat_locator$patIDs,
     relativeInf = rep(1,NPat),
@@ -97,9 +96,18 @@ exposedTimeStep = function(HPop, exposerate){
 ####### Activity functions: Human movement ####
 movementTimeStep = function(HPop, mobmat,day,control_df){
   movement_matrix = matrix(0,NPat,NPat,dimnames=list(patIDs,patIDs))
-  daily_move = subset(mobmat,Date == day)
-  daily_move_mat = as.matrix(daily_move[,c(4:8)])
-  movement_matrix[daily_move_mat[,c(2,3)]] = daily_move_mat[,1]/daily_move_mat[,4]
+  daily_move = subset(mobmat,date == day)
+  
+  daily_move = subset(daily_move,!is.na(fr_pat) & !is.na(to_pat) & !is.na(fr_users) & !is.na(movers))
+  
+  daily_move_mat = daily_move[,is.element(names(daily_move),c("fr_pat","to_pat","fr_users","movers"))]
+  daily_move_mat = as.matrix(daily_move_mat)
+  col1 = which(colnames(daily_move_mat) == "fr_pat")
+  col2=which(colnames(daily_move_mat) == "to_pat")
+  
+  colmove = which(colnames(daily_move_mat) == "movers")
+  colusers=which(colnames(daily_move_mat) == "fr_users")
+  movement_matrix[daily_move_mat[,c(col1,col2)]] = daily_move_mat[,colmove]/daily_move_mat[,colusers]
   for (i in 1:length(patIDs)){
     movement_matrix[i,i] = 1 - sum(movement_matrix[i,-i])
   }
@@ -117,8 +125,6 @@ movementTimeStep = function(HPop, mobmat,day,control_df){
   if (sum(HPop$controlled)>0){
     movement_matrix = stopMovement(HPop,movement_matrix,day)
   }
-  
-  
   #deterministic version
   #HPop$nInfMovedToday = colSums(diag(HPop$nInf) %*% movement_matrix) - HPop$nInf
   #HPop$nInf = colSums(diag(HPop$nInf) %*% movement_matrix)
@@ -127,7 +133,9 @@ movementTimeStep = function(HPop, mobmat,day,control_df){
   moved_matrix = matrix(0,NPat,NPat,dimnames=list(patIDs,patIDs))
   for (i in 1:dim(moved_matrix)[1]){
     #for (j in 1:dim(moved_matrix)[2]){
+    
     moved_matrix[i,] = rbinom(length(moved_matrix[i,]),HPop$nInf[i],prob = movement_matrix[i,])
+
     if (sum(moved_matrix[i,]) > 0){
     moved_matrix[i,] = moved_matrix[i,]/sum(moved_matrix[i,]) * HPop$nInf[i]
     }
@@ -136,6 +144,12 @@ movementTimeStep = function(HPop, mobmat,day,control_df){
   
   HPop$nInfMovedToday = ceiling(colSums(moved_matrix))
   HPop$nInf = HPop$nInf - floor(rowSums(moved_matrix)) + ceiling(colSums(moved_matrix))
+  #quick fix
+  for (i in 1:length(HPop$nInf)){
+    if (HPop$nInf[i] > HPop$nTotal[i]){
+      HPop$nInf[i] = HPop$nTotal[i]
+    }
+  }
   
   #print(paste0("Number of infected people moving: ",sum(abs(HPop$nInfMovedToday))/2))
   HPop
@@ -177,7 +191,7 @@ runSim = function(HPop,pat_info,control_info,mobmat,day_list,recrate_values,expo
   #print(all_dates)
   for (current_day in 1:length(day_list)){
     
-   # print(day_list[current_day])
+    print(day_list[current_day])
     HPop = recoveryTimeStep(HPop,recrate_values,day_list[current_day])
     HPop = exposedtoinfTimeStep(HPop,1/exposepd)
     HPop = exposedTimeStep(HPop,exposerate)
