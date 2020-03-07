@@ -1,7 +1,12 @@
-##### BEARmod v.0.7
+##### BEARmod v.0.65
 #
 # Basic Epidemic, Activity, and Response simulation model
 # 
+#
+# v0.65 updates:
+# - Cleaned up inputs into model for easier pre-processing
+# - Added capacity for time-dependent contact rates
+#
 # v0.6 updates:
 # - fixed bug when recovery rate data are missing a patch for a day
 # - patched bug that could lead to negative nInf values (however, the actual solution needs revisiting!)
@@ -16,7 +21,7 @@
 # - Added "date" versatility to use non-contiguous dates
 #
 # This model runs a basic SEIR model, with stochastic exposure, incubation, recovery, and movement
-# Disease spread occurs each day, based on the movement patterns from specific days from Baidu data.
+# Disease spread occurs each day, based on the movement patterns from specific days from mobile phone-derived data.
 #
 #
 #
@@ -75,21 +80,29 @@ exposedtoinfTimeStep = function(HPop, exp_to_infrate){
   HPop
 }
 
-exposedTimeStep = function(HPop, exposerate){
+exposedTimeStep = function(HPop, exposerate_df, current_day){
+  
+  if (is.numeric(exposerate_df)){
+    exposerate = exposerate_df
+  }
+  if (is.data.frame(exposerate_df)){
+    exposerate = subset(exposerate_df, date == current_day)$exposerate
+  }
   for (i in 1:length(HPop$nInf)){
     HPop$nExposedToday[i]= sum(rpois(HPop$nInf[i],exposerate)) * (1 - ( (HPop$nInf[i] + HPop$nExp[i]) / HPop$nTotal[i]))
-  if ( HPop$nExp[i] + HPop$nExposedToday[i] < HPop$nTotal[i] - HPop$nInf[i]) {
-  HPop$nExp[i] = HPop$nExp[i] + HPop$nExposedToday[i]
-  
-  } else {
-    HPop$nExposedToday[i] = HPop$nTotal[i] - HPop$nInf[i] - HPop$nExp[i] 
-    HPop$nExp[i]  = HPop$nTotal[i] - HPop$nInf[i]
-    
-  }
+    if ( HPop$nExp[i] + HPop$nExposedToday[i] < HPop$nTotal[i] - HPop$nInf[i]) {
+      HPop$nExp[i] = HPop$nExp[i] + HPop$nExposedToday[i]
+      
+    } else {
+      HPop$nExposedToday[i] = HPop$nTotal[i] - HPop$nInf[i] - HPop$nExp[i] 
+      HPop$nExp[i]  = HPop$nTotal[i] - HPop$nInf[i]
+      
+    }
   }
   #print(paste0("Number of people newly exposed: ",sum(HPop$nExposedToday)))
   HPop
 }
+
 
 
 
@@ -178,7 +191,7 @@ stopMovement = function(HPop,mobmat,current_date){
 
 
 ###### Master function  ####
-runSim = function(HPop,pat_info,control_info,mobmat,day_list,recrate_values,exposerate,exposepd) {
+runSim = function(HPop,pat_info,control_info,mobmat,day_list,recrate_values,exposerate_df,exposepd) {
   
   
   epidemic_curve <- data.frame(Date=as.Date(character()),
@@ -194,7 +207,7 @@ runSim = function(HPop,pat_info,control_info,mobmat,day_list,recrate_values,expo
     print(day_list[current_day])
     HPop = recoveryTimeStep(HPop,recrate_values,day_list[current_day])
     HPop = exposedtoinfTimeStep(HPop,1/exposepd)
-    HPop = exposedTimeStep(HPop,exposerate)
+    HPop = exposedTimeStep(HPop,exposerate_df, day_list[current_day])
     HPop = movementTimeStep(HPop,mobmat,day_list[current_day],control_info)
     #save(HPop,file=paste(current_day,".RData"))
     epidemic_curve = rbind(epidemic_curve,data.frame(Date = day_list[current_day], inf = sum(HPop$nInf)))
