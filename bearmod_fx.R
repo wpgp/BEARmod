@@ -2,6 +2,8 @@
 #
 # Basic Epidemic, Activity, and Response simulation model
 # 
+# v0.7 updates:
+# - Add percentage of exposed people who are infectious
 #
 # v0.65 updates:
 # - Cleaned up inputs into model for easier pre-processing
@@ -80,7 +82,7 @@ exposedtoinfTimeStep = function(HPop, exp_to_infrate){
   HPop
 }
 
-exposedTimeStep = function(HPop, exposerate_df, current_day){
+exposedTimeStep = function(HPop, exposerate_df, current_day, exposed_pop_inf_prop){
   
   if (is.numeric(exposerate_df)){
     exposerate = exposerate_df
@@ -89,7 +91,8 @@ exposedTimeStep = function(HPop, exposerate_df, current_day){
     exposerate = subset(exposerate_df, date == current_day)$exposerate
   }
   for (i in 1:length(HPop$nInf)){
-    HPop$nExposedToday[i]= sum(rpois(HPop$nInf[i],exposerate)) * (1 - ( (HPop$nInf[i] + HPop$nExp[i]) / HPop$nTotal[i]))
+    infectious_pop = HPop$nInf[i] + exposed_pop_inf_prop * HPop$nExp[i]
+    HPop$nExposedToday[i]= sum(rpois(infectious_pop,exposerate)) * (1 - ( (HPop$nInf[i] + HPop$nExp[i]) / HPop$nTotal[i]))
     if ( HPop$nExp[i] + HPop$nExposedToday[i] < HPop$nTotal[i] - HPop$nInf[i]) {
       HPop$nExp[i] = HPop$nExp[i] + HPop$nExposedToday[i]
       
@@ -191,7 +194,7 @@ stopMovement = function(HPop,mobmat,current_date){
 
 
 ###### Master function  ####
-runSim = function(HPop,pat_info,control_info,mobmat,day_list,recrate_values,exposerate_df,exposepd) {
+runSim = function(HPop,pat_info,control_info,mobmat,day_list,recrate_values,exposerate_df,exposepd,exposed_pop_inf_prop = 0) {
   
   
   epidemic_curve <- data.frame(Date=as.Date(character()),
@@ -207,7 +210,7 @@ runSim = function(HPop,pat_info,control_info,mobmat,day_list,recrate_values,expo
     print(day_list[current_day])
     HPop = recoveryTimeStep(HPop,recrate_values,day_list[current_day])
     HPop = exposedtoinfTimeStep(HPop,1/exposepd)
-    HPop = exposedTimeStep(HPop,exposerate_df, day_list[current_day])
+    HPop = exposedTimeStep(HPop,exposerate_df, day_list[current_day], exposed_pop_inf_prop)
     HPop = movementTimeStep(HPop,mobmat,day_list[current_day],control_info)
     #save(HPop,file=paste(current_day,".RData"))
     epidemic_curve = rbind(epidemic_curve,data.frame(Date = day_list[current_day], inf = sum(HPop$nInf)))
