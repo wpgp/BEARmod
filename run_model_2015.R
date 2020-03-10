@@ -2,12 +2,15 @@
 rm(list=ls())
 library(data.table) # fread - fastly reading data
 library(lubridate)
-library(rgdal)
+
+# setwd('//worldpop.files.soton.ac.uk/Worldpop/Projects/WP519091_Seasonality')
+# setwd('D:/OneDrive - University of Southampton/Wuhan Coronavirus R0/Spread risk')
+#setwd('C:/Users/sl4m18/OneDrive - University of Southampton/Wuhan Coronavirus R0/Spread risk')
 
 
-source("bearmod/BEARmod/bearmod_fx.R")
+source("bearmod/BEARmod_development/bearmod_fx_dev.R")
 # source("bearmod/bearmod_fx.R")
-source("bearmod/BEARmod/preprocess_data.R")
+source("bearmod/BEARmod_development/preprocess_data_2015_dev.R")
 #Initial parameters
 NPat = length(patNames)
 patnInf = rep(0,NPat)
@@ -16,16 +19,16 @@ patnExp = c(rep(0,NPat) )
 
 
 #start infection in Wuhan
-patnInf[which(patNames == "fes")] = 50
+patnInf[which(patNames == 42010000)] = 10
 
 
 # pop2014 or pop2015
-
-pat_locator$pop = 10000
-#pat_locator = merge(pat_locator,pop_data[,c("SHP_CITY_CODE","TOTAL_POP2015")],by.x="patNames",by.y="SHP_CITY_CODE")
+pat_locator = merge(pat_locator,pop_data[,c("SHP_CITY_CODE","TOTAL_POP2015")],by.x="patNames",by.y="SHP_CITY_CODE")
+names(pat_locator)[which(names(pat_locator) == "TOTAL_POP2015")] = "pop"
 
 #recovery rate variable
 recover_df = data.frame(date = seq(from=min(movement_data$date),to=max(movement_data$date),by="days"),recrate = recrate)
+ recover_df$recrate[which(recover_df$date > "2015-2-18")] = 1/3
  
  
 #### Running the model  ####
@@ -35,16 +38,19 @@ recover_df = data.frame(date = seq(from=min(movement_data$date),to=max(movement_
 HPop = InitiatePop(pat_locator,patnInf,patnExp)
 ###dates of simulation
 
-relative_move_data=data.frame()
- input_dates = rep("2014-11-01",500)
+# input_dates = seq(date("2015-1-5"),date("2015-3-25"),by="days") 
+# input_dates = seq(date("2015-1-2"),date("2015-3-3"),by="days") # from 2020-12-08 to 2 wks after LNY's day 
+# input_dates = seq(date("2015-1-2"),date("2015-3-17"),by="days") # coresponding to the period from 2020-12-08 to 4 wks after LNY's day 
+#day_list = seq(date("2013-12-02"),date("2014-2-13"),by="days")
+
+ input_dates = seq(date("2014-12-26"),date("2015-2-1"),by="days")
  # input_dates = seq(date("2013-12-02"),date("2014-2-13"),by="days") # coresponding to the period from 2020-12-08 to 2 wks after LNY's day 
 # input_dates = seq(date("2013-12-02"),date("2014-2-27"),by="days") # coresponding to the period from 2020-12-08 to 4 wks after LNY's day
 results = list()
 
-
 for (run in 1:500){
   
-  HPop_update = runSim(HPop,pat_locator,relative_move_data,movement_data, input_dates,recover_df, exposerate,exposepd)
+  HPop_update = runSim(HPop,pat_locator,relative_move_data,movement_data, input_dates,recover_df, exposerate,exposepd,exposed_pop_inf_prop = .25, TSinday = 1)
   print(paste0("Run # ",run))
   results[[run]] = HPop_update$all_spread
 }

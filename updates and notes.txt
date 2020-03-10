@@ -1,0 +1,13 @@
+BEARmod update schedule
+
+0.81 - 10 March 2020
+ - Major speed increase in infection 
+ - added capacity for multiple timesteps per day. TSinday defaults to 1, but defines the number of timesteps per day in the model (must be integer)
+ - added capacity for a probability of moving per timestep (fitting to Vodafone data). Not accounted for if prob_move_per_TS = 0
+
+0.7 - 8 March 2020
+ - Added capability for a proportion of exposed people to be infectious--involves "exposed_pop_inf_prop" parameter added into runSim(). Defaults to zero.
+
+Features to be added:
+- Keep track of imported/local cases (This is kept track of on a daily basis already through nInfMovedToday)
+- Move transmission parameters to a Parameters list, for simplicity of input data
