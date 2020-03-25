@@ -3,7 +3,7 @@ rm(list=ls())
 library(data.table) # fread - fastly reading data
 library(lubridate)
 
-source("bearmod_fx.R")
+source("bearmod_fx (3).R")
   source("preprocess_small.R")
 #Initial parameters
 NPat = length(patNames)
