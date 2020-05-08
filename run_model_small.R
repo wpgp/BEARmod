@@ -3,7 +3,7 @@ rm(list=ls())
 library(data.table) # fread - fastly reading data
 library(lubridate)
 
-source("bearmod_fx (3).R")
+source("bearmod_fx.R")
   source("preprocess_small.R")
 #Initial parameters
 NPat = length(patNames)
@@ -16,8 +16,7 @@ pat_locator$pop = 100
 patnInf[which(patNames == 1)] = 50
 #recovery rate variable
 recover_df = data.frame(date = seq(from=min(movement_data$date),to=max(movement_data$date),by="days"),recrate = recrate)
-relative_move_data=data.frame()
- 
+relative_move_data=data.frame(date = "2020-05-01",from = patIDs,relative_move = .1)
 #### Running the model  ####
 
 
