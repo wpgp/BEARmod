@@ -1,7 +1,7 @@
 # BEARmod
 Basic Epidemic, Activity, and Response COVID-19 model
 
-This model implements a basic SEIR simulation model, accounting for variable daily movement patterns, recovery rates, and contact rates. The timestep defaults to daily, but can be changed to better approximate continuous time. This paper is further explored in [1]
+This model implements a basic SEIR simulation model, accounting for variable daily movement patterns, recovery rates, and contact rates. The timestep defaults to daily, but can be changed to better approximate continuous time. This model is further described in a recent Nature paper [1]
 
 For a placeholder dummy dataset and example simulation run, please see "run_model_small.R", which uses a dummy movement dataset "testmove.csv"
 
