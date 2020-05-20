@@ -59,12 +59,13 @@
 library(lubridate)
 
 #This function creates the starting population
-InitiatePop = function(pat_locator,initialInf,initialExp){
+InitiatePop = function(pat_locator,initialInf,initialExp,asymp_frac = 0){
   NPat = dim(pat_locator)[1]
   list(
     nInitialInf = initialInf,
     nInitialExp = initialExp,
-    nInf = initialInf,
+    nInf = initialInf * (1 - asymp_frac),
+    nInf_asymp = initialInf * asymp_frac,
     nExp = initialExp,
     nRec = rep(0,NPat),
     nTotal = pat_locator$pop,
