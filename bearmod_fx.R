@@ -66,8 +66,11 @@ InitiatePop = function(pat_locator,initialInf,initialExp,asymp_frac = 0){
     nInitialExp = initialExp,
     nInf = initialInf * (1 - asymp_frac),
     nInf_asymp = initialInf * asymp_frac,
+    nQ_Fatal = rep(0,NPat),
+    nQ_notFatal = rep(0,NPat),
     nExp = initialExp,
     nRec = rep(0,NPat),
+    nDeath = rep(0,NPat),
     nTotal = pat_locator$pop,
     names = pat_locator$patNames,
     IDs = pat_locator$patIDs,
@@ -82,11 +85,14 @@ InitiatePop = function(pat_locator,initialInf,initialExp,asymp_frac = 0){
 
 ##### Epidemic functions: exposure, infectivity, recovery  ####
 recoveryTimeStep = function(HPop, recrate_values,current_day){
-  recrate = subset(recrate_values,date == current_day)$recrate
-  HPop$nInf = round(HPop$nInf)
+  base_recrate = subset(recrate_values,date == current_day)$recrate
+  asymp_recrate = base_recrate
+  symp_recrate = base_recrate - 
+  HPop$nInf_asymp = round(HPop$nInf_asymp)
+  HPop$nInf_asymp = round(HPop$nInf_asymp)
  #print(recrate)#print(paste0("Day ",current_day, " recovery rate: ", recrate))
-  for (i in 1:length(HPop$nInf)){
-  HPop$nRecoveredToday[i]= sum(rbinom(HPop$nInf[i],1,recrate))
+  for (i in 1:length(HPop$nInf_asymp)){
+  HPop$nRecoveredToday[i]= sum(rbinom(HPop$nInf_asymp[i],1,recrate)) +
 
     
     HPop$nInf[i] = HPop$nInf[i] - HPop$nRecoveredToday[i]
@@ -104,6 +110,7 @@ exposedtoinfTimeStep = function(HPop, exp_to_infrate){
     #print(HPop$nExposedToday[i])
     HPop$nInfectedToday[i]= sum(rbinom(HPop$nExp[i],1,exp_to_infrate))
     #if (HPop$nInf[i] + HPop$nInfectedToday[i] < HPop$nTotal[i] - HPop$nExp[i] - HPop$nRec[i] ) {
+    
       HPop$nInf[i] = HPop$nInf[i] + HPop$nInfectedToday[i]
       
    # } else {
